@@ -1,1 +1,1132 @@
-Hallo Zusammen das ist der Code für das PingPong Shield
+
+#define SETBIT(Adr,Bit)         (Adr |= (1<<Bit))
+#define CLEARBIT(Adr,Bit)       (Adr &= ~(1<<Bit))
+#define CHECKBIT(Adr,Bit)       (Adr & (1<<Bit))
+#define INVERTBIT(Adr,Bit)      (Adr ^= (1<<Bit))
+
+#define LEDS                  PORTD
+#define TASTER                PINB
+#define ENABLELEDS            8
+#define ENABLEU1              9
+#define ENABLEU2              10
+#define ENABLEU3              11
+#define TASTERECHTS           12
+#define TASTELINKS            13
+#define LEDOFF                0x00
+#define LEDON                 0xFF
+
+#define lang                  300
+#define kurz                  100
+#define pause                 50
+#define pauselang             150
+
+#define LEDGANZLINKS          0b10000000
+#define LEDGANZRECHTS         0b00000001
+#define LEDLINKS              0b01000000
+#define LEDRECHTS             0b00000010
+
+#define NOTE_B0  31
+#define NOTE_C1  33
+#define NOTE_CS1 35
+#define NOTE_D1  37
+#define NOTE_DS1 39
+#define NOTE_E1  41
+#define NOTE_F1  44
+#define NOTE_FS1 46
+#define NOTE_G1  49
+#define NOTE_GS1 52
+#define NOTE_A1  55
+#define NOTE_AS1 58
+#define NOTE_B1  62
+#define NOTE_C2  65
+#define NOTE_CS2 69
+#define NOTE_D2  73
+#define NOTE_DS2 78
+#define NOTE_E2  82
+#define NOTE_F2  87
+#define NOTE_FS2 93
+#define NOTE_G2  98
+#define NOTE_GS2 104
+#define NOTE_A2  110
+#define NOTE_AS2 117
+#define NOTE_B2  123
+#define NOTE_C3  131
+#define NOTE_CS3 139
+#define NOTE_D3  147
+#define NOTE_DS3 156
+#define NOTE_E3  165
+#define NOTE_F3  175
+#define NOTE_FS3 185
+#define NOTE_G3  196
+#define NOTE_GS3 208
+#define NOTE_A3  220
+#define NOTE_AS3 233
+#define NOTE_B3  247
+#define NOTE_C4  262
+#define NOTE_CS4 277
+#define NOTE_D4  294
+#define NOTE_DS4 311
+#define NOTE_E4  330
+#define NOTE_F4  349
+#define NOTE_FS4 370
+#define NOTE_G4  392
+#define NOTE_GS4 415
+#define NOTE_A4  440
+#define NOTE_AS4 466
+#define NOTE_B4  494
+#define NOTE_C5  523
+#define NOTE_CS5 554
+#define NOTE_D5  587
+#define NOTE_DS5 622
+#define NOTE_E5  659
+#define NOTE_F5  698
+#define NOTE_FS5 740
+#define NOTE_G5  784
+#define NOTE_GS5 831
+#define NOTE_A5  880
+#define NOTE_AS5 932
+#define NOTE_B5  988
+#define NOTE_C6  1047
+#define NOTE_CS6 1109
+#define NOTE_D6  1175
+#define NOTE_DS6 1245
+#define NOTE_E6  1319
+#define NOTE_F6  1397
+#define NOTE_FS6 1480
+#define NOTE_G6  1568
+#define NOTE_GS6 1661
+#define NOTE_A6  1760
+#define NOTE_AS6 1865
+#define NOTE_B6  1976
+#define NOTE_C7  2093
+#define NOTE_CS7 2217
+#define NOTE_D7  2349
+#define NOTE_DS7 2489
+#define NOTE_E7  2637
+#define NOTE_F7  2794
+#define NOTE_FS7 2960
+#define NOTE_G7  3136
+#define NOTE_GS7 3322
+#define NOTE_A7  3520
+#define NOTE_AS7 3729
+#define NOTE_B7  3951
+#define NOTE_C8  4186
+#define NOTE_CS8 4435
+#define NOTE_D8  4699
+#define NOTE_DS8 4978
+#define REST     0000
+
+/*---------------------------- Globale Variablen -----------------------------*/
+typedef enum {PINGPONG, REAKTIONSTESTER, MORSE, INITIALISIERUNG, MODE} Spielmodus_t;
+Spielmodus_t Spielmodus = MODE; //enum für Status
+unsigned int Zaehler = 0;
+/*---------------------------- Tastenauswertung -----------------------------*/
+char TastenAuswertungPos;        // Diese Variable muss global deklariert werden
+char TastenAuswertungNeg;       // Diese Variable muss global deklariert werden
+/*---------------------------- Globale Variablen Spiele----------------------*/
+unsigned char Anzeigemuster = 0b00000001; // Das Muster welches für die LED ist so kann es einfach verändert werden
+unsigned int Wartevergleich = 500; // Das ist der Wartevergleich für den Wartezaehler
+unsigned int Wartezaehler = 1; // Das ist der Wartezaehler diser zahl hinauf im das Delay zu bestimmen
+unsigned int  Blinkzaehler = 1;
+unsigned int Blinkvergleich = 250;//Das ist den Vergleich für das Blinken im fall eines GAMEOVER
+
+/*---------------------------- Globale Variablen Ping Pong-------------------*/
+typedef enum {GAMEOVER, ENDE, UNTERWEGS, RESTART, ENDEUNDTOLERANZ} StatusPingPong_t;
+StatusPingPong_t StatusPingPong = RESTART; //enum für Staati
+unsigned char Richtunglinks = 0xFF;// Das ist die Variable welche die Richtung anzeigt
+unsigned char Levelanzeige = 0b00000001; // Dies ist die Variabel für die geschwindigkeit des Spiels
+/*---------------------------- Globale Variablen Gameover-------------------*/
+int melody[] = {
+ 
+  NOTE_A4, NOTE_G4, NOTE_E4, NOTE_D4, 
+  NOTE_E4, REST
+};
+
+int durations[] = {
+  16, 16, 16, 16, 
+  4, 4
+};
+/*------------------------- Globale Variablen Reaktionstester-------------------*/
+unsigned int Zufallszeit = 2000;
+unsigned int Reaktionszaehler = 1;
+unsigned char Werte[4];
+typedef enum {START,ZUFALLSZEIT,FEHLERERKENNUNG,ZAEHLEN,VICTORY} StatusReaktionstester_t;
+StatusReaktionstester_t StatusReaktionstester = START; //enum für Staati
+/*----------------------------------- Morse Spiele -----------------------------*/
+unsigned char text[20]= "Wilkommen zum Meitlitechniktag";
+unsigned char* pointer = text;
+/*---------------------------- Globale Variablen Siebensement-------------------*/
+unsigned char Siebensegment[] = {0b00111111, 0b00000110, 0b01011011, 0b01001111, 0b01100110, 0b01101101, 0b01111101, 0b00000111, 0b01111111, 0b01101111};
+/*--------------------------- Funktionsprototypen ----------------------------*/
+void WaitMilliseconds(int MilliSeconds);
+void Flankenerkennung(void);
+
+/*----------------------------- Hauptprogramm --------------------------------*/
+void setup() {
+  pinMode(0, OUTPUT);
+  pinMode(1, OUTPUT);
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+  pinMode(7, OUTPUT);
+  pinMode(12, INPUT_PULLUP);
+  pinMode(13, INPUT_PULLUP);
+  pinMode(A0, OUTPUT);
+  pinMode(ENABLELEDS, OUTPUT);
+  pinMode(ENABLEU1, OUTPUT);
+  pinMode(ENABLEU2, OUTPUT);
+  pinMode(ENABLEU3, OUTPUT);
+}
+
+void loop() {
+  Flankenerkennung();
+  if ((!CHECKBIT(TASTER, 4)) && (!CHECKBIT(TASTER, 5)))
+  {
+    if (Zaehler < 2000)
+    {
+      Zaehler++;
+      WaitMilliseconds(1);
+    }
+    else
+    {
+      Spielmodus = INITIALISIERUNG;
+      Zaehler = 0;
+      digitalWrite(ENABLELEDS, LOW);
+      digitalWrite(ENABLEU1, LOW);
+      digitalWrite(ENABLEU2, LOW);
+      digitalWrite(ENABLEU3, LOW);
+      digitalWrite(A0,LOW);
+    }
+  }
+  else
+  {
+    if(Spielmodus != MODE)
+    {
+      Zaehler = 0;
+    }
+  }
+  switch (Spielmodus)
+  {
+    case PINGPONG:
+      PingPong();
+      break;
+
+    case REAKTIONSTESTER:
+      Reaktionstester();
+      break;
+
+    case MORSE:
+      Morse();
+      break;
+
+    case INITIALISIERUNG:
+      //Allgemein
+      Anzeigemuster = 0b00000001; // Das Muster welches für die LED ist so kann es einfach verändert werden
+      Wartezaehler = 1; // Das ist der Wartezaehler diser zahl hinauf im das Delay zu bestimmen
+      Spielmodus = MODE;
+      //PingPong
+      Wartevergleich = 500; // Das ist der Wartevergleich für den Wartezaehler
+      Richtunglinks = 0xFF;// Das ist die Variable welche die Richtung anzeigt
+      Levelanzeige = 0b00000001; // Dies ist die Variabel für die geschwindigkeit des Spiels
+      Blinkvergleich = 250;//Das ist den Vergleich für das Blinken im fall eines GAMEOVER
+      StatusPingPong = RESTART;
+      //Reaktiostester
+      StatusReaktionstester = START;
+      Reaktionszaehler = 1;
+      //Morse
+      *pointer = text[0];
+      pointer = 1;
+      
+      digitalWrite(ENABLELEDS, HIGH);
+      digitalWrite(ENABLEU1, LOW);
+      digitalWrite(ENABLEU2, LOW);
+      digitalWrite(ENABLEU3, LOW);
+      digitalWrite(A0,LOW);
+      break;
+
+    case MODE:
+    digitalWrite(ENABLELEDS, HIGH);
+      Anzeigemuster = 0b01010101;
+      if (Zaehler <= 100)
+      {
+        Zaehler++;
+        WaitMilliseconds(10);
+      }
+      else
+      {
+        if ((CHECKBIT(TASTER, 5)) && (!CHECKBIT(TASTER, 4)))
+        {
+          Spielmodus = REAKTIONSTESTER;
+          digitalWrite(ENABLELEDS, LOW);
+          digitalWrite(ENABLEU1, LOW);
+          digitalWrite(ENABLEU2, LOW);
+          digitalWrite(ENABLEU3, LOW);
+          digitalWrite(A0,LOW);
+          Zaehler = 1;
+          WaitMilliseconds(100);
+        }
+        if ((CHECKBIT(TASTER, 4)) && (!CHECKBIT(TASTER, 5)))
+        {
+          Spielmodus = PINGPONG;
+          digitalWrite(ENABLEU1, LOW);
+          digitalWrite(ENABLEU2, LOW);
+          digitalWrite(ENABLEU3, LOW);
+          digitalWrite(A0,LOW);
+          Zaehler = 1;
+          WaitMilliseconds(100);
+        }
+        if ((!CHECKBIT(TASTER, 4)) && (!CHECKBIT(TASTER, 5)))
+        {
+          Spielmodus = MORSE;
+          digitalWrite(ENABLELEDS, LOW);
+          digitalWrite(ENABLEU1, LOW);
+          digitalWrite(ENABLEU2, LOW);
+          digitalWrite(ENABLEU3, LOW);
+          digitalWrite(A0,LOW);
+          Zaehler = 1;
+          WaitMilliseconds(100);
+        }
+      }
+      break;
+   }  
+   LEDS = Anzeigemuster;   
+}
+void PingPong(void)
+{
+  switch (StatusPingPong) //Status maschie
+  {
+    case RESTART:
+      if (CHECKBIT(TastenAuswertungNeg, 4)&& (!CHECKBIT(TastenAuswertungNeg, 5))) //TASTERECHTS gedrückt
+      {
+        digitalWrite(ENABLELEDS, HIGH);
+        digitalWrite(ENABLEU1, LOW);
+        digitalWrite(ENABLEU2, LOW);
+        digitalWrite(ENABLEU3, LOW);
+        Anzeigemuster = LEDGANZRECHTS;    //Zurücksetzung
+        StatusPingPong = UNTERWEGS;               //Zurücksetzung
+        Wartevergleich = 500;              //Zurücksetzung
+        Levelanzeige = 0b00000001;// Level zurücksetzen
+      }
+      else
+      {
+        Levelanzeige = 0b00000001;// Level zurücksetzen
+        Anzeigemuster = LEDGANZRECHTS;
+        digitalWrite(ENABLELEDS, HIGH);
+        digitalWrite(ENABLEU1, LOW);
+        digitalWrite(ENABLEU2, LOW);
+        digitalWrite(ENABLEU3, LOW);
+      }
+      break;
+
+    case UNTERWEGS:
+      if (Richtunglinks)
+      {
+        if (LEDGANZLINKS == Anzeigemuster)
+        {
+          StatusPingPong = ENDE;
+        }
+        else
+        {
+          if (CHECKBIT(TastenAuswertungNeg, 5))
+          {
+            if (Anzeigemuster == LEDLINKS)
+            {
+              if (Wartezaehler >= (Wartevergleich * 0.75)) //Toleranz einbauen
+              {
+                StatusPingPong = ENDEUNDTOLERANZ;
+                Anzeigemuster = LEDGANZLINKS;
+              }
+              else
+              {
+                StatusPingPong = GAMEOVER;
+                Gameover();
+              }
+            }
+            else
+            {
+              StatusPingPong = GAMEOVER;
+              Gameover();
+            }
+          }
+
+          else
+          {
+            if (Wartezaehler <= Wartevergleich)
+            {
+              Wartezaehler++;
+            }
+            else
+            {
+              Anzeigemuster *= 2;// Schieben
+              Wartezaehler = 1;
+            }
+          }
+        }
+      }
+
+      else
+      {
+        if ( Anzeigemuster == LEDGANZRECHTS)
+        {
+          StatusPingPong = ENDE;
+        }
+        else
+        {
+          if (CHECKBIT(TastenAuswertungNeg, 4))
+          {
+            if (Anzeigemuster == LEDRECHTS)
+            {
+              if (Wartezaehler >= (Wartevergleich * 0.75))//Toleranz
+              {
+                StatusPingPong = ENDEUNDTOLERANZ;
+                Anzeigemuster = LEDGANZRECHTS;
+              }
+              else
+              {
+                StatusPingPong = GAMEOVER;
+                Gameover();
+              }
+            }
+            else
+            {
+              StatusPingPong = GAMEOVER;
+              Gameover();
+            }
+          }
+          else
+          {
+            if (Wartezaehler <= Wartevergleich)
+            {
+              Wartezaehler++;
+            }
+            else
+            {
+              Anzeigemuster /= 2;//Schieben
+              Wartezaehler = 1;
+            }
+          }
+        }
+      }
+      break;
+
+    case ENDE:
+    case ENDEUNDTOLERANZ:
+      if (StatusPingPong ==  ENDEUNDTOLERANZ)
+      {
+        if (Wartezaehler <= Wartevergleich)
+        {
+          Wartezaehler++;
+        }
+        else
+        {
+          StatusPingPong = UNTERWEGS;
+          Richtunglinks = ~Richtunglinks;
+          Wartezaehler = 1;
+
+          if (Levelanzeige < 0xFF) //höchste Geschwindikeits level noch nicht erreicht?
+          {
+            Wartevergleich *= 0.8;
+            Levelanzeige = ((Levelanzeige * 2) + 1);
+          }
+        }
+      }
+      else
+      {
+        if (Richtunglinks)
+        {
+          if (CHECKBIT(TastenAuswertungNeg, 5))
+          {
+            if (Levelanzeige <= 0b11111111) //höchste Geschwindikeits level noch nicht erreicht?
+            {
+              Wartevergleich *= 0.8;
+              Levelanzeige = ((Levelanzeige * 2) + 1);//Level vergroessern
+            }
+            Richtunglinks = ~Richtunglinks;
+            StatusPingPong = UNTERWEGS;
+            Wartezaehler = 1;
+          }
+          else
+          {
+            if (Wartezaehler <= Wartevergleich)
+            {
+              Wartezaehler++;
+            }
+            else
+            {
+              StatusPingPong = GAMEOVER;
+              Wartezaehler = 1;
+              Gameover();
+            }
+          }
+        }
+        else
+        {
+          if (CHECKBIT(TastenAuswertungNeg, 4))
+          {
+            if (Levelanzeige <= 0b11111111) //höchste Geschwindikeits level noch nicht erreicht?
+            {
+              Wartevergleich *= 0.8;
+              Levelanzeige = ((Levelanzeige * 2) + 1);//Level vergroessern
+            }
+            Richtunglinks = 0xFF;
+            StatusPingPong = UNTERWEGS;
+            Wartezaehler = 1;
+          }
+          else
+          {
+            if (Wartezaehler <= Wartevergleich)
+            {
+              Wartezaehler++;
+            }
+            else
+            {
+              StatusPingPong = GAMEOVER;
+              Richtunglinks = 0xFF;
+              Wartezaehler = 1;
+              Gameover();
+            }
+          }
+        }
+      }
+        break;
+
+      case GAMEOVER:
+        if ((!CHECKBIT(TASTER, 4)) && (!CHECKBIT(TASTER, 5)))
+        {
+          StatusPingPong = RESTART;
+          Zaehler = 0;
+
+        }
+        else
+        {
+          if (Wartezaehler <= Blinkvergleich)
+          {
+            Wartezaehler++;
+          }
+          else
+          {
+            if (Anzeigemuster == LEDOFF)
+            {
+              Anzeigemuster = Levelanzeige; /* Am Anfang habe ich hier ein switch case gehabt das habe
+              ich jedoch empfernt, da es einfacher geht die Levels anzuzeigen */
+            }
+            else
+            {
+              Anzeigemuster = LEDOFF;
+            }
+            Wartezaehler = 1;
+          }
+          
+        }
+        break; 
+  }   
+  LEDS = Anzeigemuster;
+  WaitMilliseconds(1);
+}
+
+void Reaktionstester(void)
+{
+  
+    switch(StatusReaktionstester)
+    {
+      case START:
+        digitalWrite(ENABLEU1, HIGH);
+        digitalWrite(ENABLEU2, HIGH);
+        digitalWrite(ENABLEU3, HIGH);
+        Wartezaehler = 1;
+        Reaktionszaehler = 1;
+        Anzeigemuster = Siebensegment[0];
+        if(CHECKBIT(TastenAuswertungNeg,5))
+        {
+          StatusReaktionstester = ZUFALLSZEIT;
+          Zufallszeit = random(2000,10000);
+        }
+      break;
+      case ZUFALLSZEIT:
+      //Wurde Quittierungstaste gerdückt
+      if(CHECKBIT(TastenAuswertungNeg,4))
+      {
+        StatusReaktionstester = FEHLERERKENNUNG;
+        Wartezaehler = 1;
+        Blinkzaehler = 1;
+      }
+      //"000" / "888" blinken 2Hz Takt
+      if(Blinkzaehler <= 250)
+      {
+        Blinkzaehler++;
+      }
+      else
+      {
+        if(Anzeigemuster == Siebensegment[0])
+        {
+          Anzeigemuster = 0;
+        }
+        else
+        {
+          Anzeigemuster = Siebensegment[0];
+        }
+        Blinkzaehler = 1;
+      }
+      //Zufallszeit abwarten
+      if(Wartezaehler <= Zufallszeit)
+      {
+        Wartezaehler++;
+      }
+      else
+      {
+        Wartezaehler = 1;
+        Blinkzaehler = 1;
+        StatusReaktionstester = ZAEHLEN;
+        digitalWrite(A0, HIGH);
+        digitalWrite(ENABLEU1, LOW);
+        digitalWrite(ENABLEU2, LOW);
+        digitalWrite(ENABLEU3, LOW);
+      }    
+      WaitMilliseconds(1);
+      break;
+      
+      case FEHLERERKENNUNG:
+        digitalWrite(ENABLEU1, HIGH);
+        digitalWrite(ENABLEU2, HIGH);
+        digitalWrite(ENABLEU3, HIGH);
+      if(CHECKBIT(TastenAuswertungNeg,5))
+      {
+        StatusReaktionstester = START;
+        digitalWrite(ENABLEU1, LOW);
+        digitalWrite(ENABLEU2, LOW);
+        digitalWrite(ENABLEU3, LOW);
+      }
+      if(Blinkzaehler <= 250)
+      {
+        Blinkzaehler++;
+      }
+      else
+      {
+        if(Anzeigemuster == Siebensegment[8])
+        {
+          Anzeigemuster = 0;
+        }
+        else
+        {
+          Anzeigemuster = Siebensegment[8];
+        }
+        Blinkzaehler = 1;
+      }
+      WaitMilliseconds(1);
+      break;
+      
+      case ZAEHLEN:
+      if(CHECKBIT(TastenAuswertungNeg,4))
+      {
+        StatusReaktionstester = VICTORY;
+        digitalWrite(A0, LOW);
+        digitalWrite(ENABLELEDS, LOW);
+      }
+      else
+      {
+        if(Reaktionszaehler >= 999)
+        {
+          StatusReaktionstester = FEHLERERKENNUNG; 
+        }
+        if(Reaktionszaehler <= 200)
+        {
+          digitalWrite(A0, LOW);
+        }
+      umwandeln(Reaktionszaehler);
+      anzeigen();
+      Reaktionszaehler++;
+      }
+      break;
+      case VICTORY:
+      if(CHECKBIT(TastenAuswertungNeg,5))
+      {
+        StatusReaktionstester = START;
+      }
+      anzeigen();
+      break;
+    }  
+}
+void Morse(void)
+{
+  switch(*pointer)
+  {
+    case 'a':
+    case 'A':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'b':
+    case 'B':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'c':
+    case 'C':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'd':
+    case 'D':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'e':
+    case 'E':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'f':
+    case 'F':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'g':
+    case 'G':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'h':
+    case 'H':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'i':
+    case 'I':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'j':
+    case 'J':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'k':
+    case 'K':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'l':
+    case 'L':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'm':
+    case 'M':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'n':
+    case 'N':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'o':
+    case 'O':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'p':
+    case 'P':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'q':
+    case 'Q':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'r':
+    case 'R':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 's':
+    case 'S':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 't':
+    case 'T':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    break;
+    case 'u':
+    case 'U':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'v':
+    case 'V':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'w':
+    case 'W':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'x':
+    case 'X':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'y':
+    case 'Y':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case 'z':
+    case 'Z':
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(lang);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pause);
+    digitalWrite(A0,HIGH);
+    WaitMilliseconds(kurz);
+    digitalWrite(A0,LOW);
+    WaitMilliseconds(pauselang);
+    break;
+    case ' ':
+    WaitMilliseconds(500);
+    break;
+    
+  }
+ pointer++;
+ if(*pointer == 0)
+ {
+    Spielmodus = INITIALISIERUNG;
+ }
+}
+void umwandeln(unsigned int Reaktionszahl)
+{
+  unsigned int Ziffer = 0;
+  unsigned int Zahl = 0;
+  Zahl = Reaktionszahl;
+  for(unsigned int b = 0;b < 3;b++)
+    {   
+          Ziffer = Zahl % 10;
+          Werte[b] = Siebensegment[Ziffer]; 
+          Zahl -= Ziffer;
+          Zahl /= 10; 
+    }
+} 
+void anzeigen()
+{
+  for(unsigned int i = 0;i < 3;i++)
+  {
+    digitalWrite((9+i),HIGH);
+    Anzeigemuster = Werte[i];
+    LEDS = Anzeigemuster;
+    delayMicroseconds(333);
+    digitalWrite((9+i),LOW);
+  }
+}  
+
+void WaitMilliseconds(int MilliSeconds)
+{
+  for (int i = 0; i < MilliSeconds; i++)
+  {
+    delay(1);
+  }
+}
+void Flankenerkennung(void)
+{
+  static char TastenVorher = 0;      // Wird nur beim ersten Aufruf mit 0 initialisiert
+  char TastenAktuell;
+
+  TastenAktuell = TASTER;
+  TastenAuswertungPos = TastenAktuell & ~TastenVorher;
+  TastenAuswertungNeg = ~TastenAktuell & TastenVorher;
+  TastenVorher = TastenAktuell;
+}
+void Gameover(void)
+{
+  int size = sizeof(durations) / sizeof(int);
+
+  for (int note = 0; note < size; note++) {
+    //to calculate the note duration, take one second divided by the note type.
+    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+    int duration = 1000 / durations[note];
+    tone(A0, melody[note], duration);
+
+    //to distinguish the notes, set a minimum time between them.
+    //the note's duration + 30% seems to work well:
+    int pauseBetweenNotes = duration * 2.0;
+    delay(pauseBetweenNotes);
+    
+    //stop the tone playing:
+    noTone(A0);
+  }
+}
