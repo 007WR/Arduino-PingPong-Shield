@@ -1,0 +1,37 @@
+#define LEDS                  PORTD
+#define TASTER                PINB
+#define ENABLELEDS            8
+#define ENABLEU1              9
+#define ENABLEU2              10
+#define ENABLEU3              11
+#define TASTERECHTS           12
+#define TASTELINKS            13
+#define LEDOFF                0x00
+#define LEDON                 0xFF
+
+void setup() {
+  pinMode(0, OUTPUT);
+  pinMode(1, OUTPUT);
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+  pinMode(7, OUTPUT);
+  pinMode(12, INPUT_PULLUP);
+  pinMode(13, INPUT_PULLUP);
+  pinMode(A0, OUTPUT);
+  pinMode(ENABLELEDS, OUTPUT);
+  pinMode(ENABLEU1, OUTPUT);
+  pinMode(ENABLEU2, OUTPUT);
+  pinMode(ENABLEU3, OUTPUT);
+
+  digitalWrite(ENABLELEDS, HIGH);// ENABLELEDS = 
+}
+
+void loop() {
+digitalWrite(0,HIGH);
+delay(100);
+digitalWrite(0,LOW);
+delay(100);
+}
